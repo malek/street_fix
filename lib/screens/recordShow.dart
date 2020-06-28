@@ -1,12 +1,10 @@
 import 'dart:async';
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:sensors/sensors.dart';
 import 'package:street_fix/types/accelRecord.dart';
 import 'package:street_fix/widgets/tableData.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:csv/csv.dart';
+import 'package:street_fix/functions/csvMaker.dart';
 
 class RecordShow extends StatefulWidget {
   @override
@@ -14,61 +12,24 @@ class RecordShow extends StatefulWidget {
 }
 
 class _RecordShowState extends State<RecordShow> {
-  String recordresult = '';
-  String buttonText = 'record';
+  //-----------Declarations--------------
+
   double x = 0, y = 0, z = 0; // for acc data
   bool visble =
-      false; // this var for the visibility of the block(Acc table, countDown number)
-  List<AccelRecord> accelRecordData = new List();
-  final timeControler = new TextEditingController();
-  //column for x y z table * in the begining ykon displayed*
-  Column results = new Column();
+      false; //for the visibility of the block(Acc table, countDown number)
+  final timeControler = new TextEditingController(); //fot thr entred time
+
+  Column results =
+      new Column(); //column for x y z table * in the begining ykon displayed*
   int _counter; // time counter from n second to zero
   Timer _timer;
   var startTime;
-
-  //-------------------Functions
-
-  // csv file creation
-
+  //lists for the Acceleromtre function
   List<List<dynamic>> rows = List<List<dynamic>>();
   List<List<dynamic>> recordsRows = List<List<dynamic>>();
   StreamSubscription accelStream; // it was  equal to null
-  //List <List<dynamic>> row = List();
-
-  Future<String> get _localPath async {
-    final directory = await getExternalStorageDirectory();
-
-    return directory.path;
-  }
-
-  Future<File> get _localFile async {
-    final path = await _localPath;
-    print('this is my path $path');
-    return File('$path/Recording.csv');
-  }
-
-  Future<File> getCsv(rows) async {
-    final file = await _localFile;
-
-    String csv = const ListToCsvConverter().convert(rows);
-    print(csv);
-
-    // Write the file.
-    return file.writeAsString('$csv');
-  }
-
-
-  //  title column header initialisation
-  initHeaderColumn() {
-    List<dynamic> headerTitle = List();
-    headerTitle.add('Date');
-    headerTitle.add('Axis X');
-    headerTitle.add('Axis Y');
-    headerTitle.add('Axis Z');
-
-    recordsRows.add(headerTitle);
-  }
+  List<List<dynamic>> row = List();
+  //-------------------Functions
 
   //hide/show table block
   void toggleTable(v) {
@@ -82,45 +43,29 @@ class _RecordShowState extends State<RecordShow> {
     accelStream = accelerometerEvents.listen((AccelerometerEvent event) {
       handler(event);
     });
-
-    //get the sensor data and set then to the data types
   }
 
-  // actuall time
+  // get the actuall time
   now() {
     return DateTime.now().millisecondsSinceEpoch;
   }
 
-  //some changes
+  //to pick accel data while time is running
   handleAccelEvent(event) {
     setState(() {
       x = event.x;
       y = event.y;
       z = event.z;
     });
-    //put the Acc data in a row and send the row to list of rows 'named recordRows' to prepare a csv file
-
-    List toLista(AccelRecord r) {
-      List row = List();
-      row.add(r.tim);
-      row.add(r.axeX);
-      row.add(r.axeY);
-      row.add(r.axeZ);
-
-      return row;
-    }
-
-    //List<dynamic> row = List();
-    //to have the time we record each x y z
-    var t = now() - startTime;
+    //In the fllwing lines : put the Acc data in a rowItem object
+    //send the object to list of rows 'named recordRows' to prepare a csv file
+    var t = now() - startTime; //to have the time we record each x y z
     AccelRecord rowItem = new AccelRecord(axeX: x, axeY: y, axeZ: z, tim: t);
-
-    recordsRows.add(toLista(rowItem));
+    recordsRows.add(rowItem.toList());
   }
 
   //timer from N second to zero
   void startCountDown(counter, onEndcallBack) {
-    initHeaderColumn();
     if (_timer != null) {
       _timer.cancel();
     }
@@ -138,25 +83,23 @@ class _RecordShowState extends State<RecordShow> {
     });
   }
 
-  //once he click on start recording -time yan9os , activate the acc , send acc data , show the table Data , stop recording
+  //once he click on start recording: -take the time we started -time yan9os ,
+  //activate the acc, show the table Data, stop recording
   startRecording() {
-    // to take the exct time we lunched the recording 
-    startTime = now();
+    startTime = now(); // to take the exact second we lunched the record
     startCountDown(_counter, () {
       stopRecording();
     });
     startAccelerometer(handleAccelEvent);
     toggleTable(true);
-    //showTableAcc();
   }
 
   //once the timer finished: -hide table , send the Acc data to csv file
   stopRecording() {
     accelStream.cancel();
     toggleTable(false);
-
-    recordsRows.add(rows);
-    getCsv(recordsRows);
+    recordsRows.add(rows); //  send the acc data to make the csv file
+    getCsv(recordsRows); //check the csvMaker.dart
   }
 
   @override
@@ -212,15 +155,9 @@ class _RecordShowState extends State<RecordShow> {
                         .text); //to convert the text input to int -time-
                   });
                   startRecording();
-
-                  print('this isisisi $_counter');
-                  //onclickStart = Container(
-                  //child:                   );
                 }),
             Visibility(
               child: TableData(counter: _counter, x: x, y: y, z: z),
-
-              //createAccDataTable(),
               visible: visble,
             ),
           ]),
