@@ -5,6 +5,7 @@ import 'package:sensors/sensors.dart';
 import 'package:street_fix/types/accelRecord.dart';
 import 'package:street_fix/widgets/tableData.dart';
 import 'package:street_fix/functions/csvMaker.dart';
+import 'package:street_fix/functions/helper.dart';
 
 class RecordShow extends StatefulWidget {
   @override
@@ -14,22 +15,21 @@ class RecordShow extends StatefulWidget {
 class _RecordShowState extends State<RecordShow> {
   //-----------Declarations--------------
 
-  double x = 0, y = 0, z = 0; // for acc data
-  bool visble =
-      false; //for the visibility of the block(Acc table, countDown number)
-  final timeControler = new TextEditingController(); //fot thr entred time
-
-  Column results =
-      new Column(); //column for x y z table * in the begining ykon displayed*
-  int _counter; // time counter from n second to zero
-  Timer _timer;
+  // for acc data
+  double x = 0, y = 0, z = 0;
+  //for the visibility of the block(Acc table, countDown number)
+  bool visble = false;
+  //fot inpute entred time
+  final timeControler = new TextEditingController();
+  //column for x y z table * in the begining ykon displayed*
+  Column results = new Column();
+  // time counter from n second to zero
+  int _counter;
   var startTime;
+
   //lists for the Acceleromtre function
-  List<List<dynamic>> rows = List<List<dynamic>>();
   List<List<dynamic>> recordsRows = List<List<dynamic>>();
   StreamSubscription accelStream; // it was  equal to null
-  List<List<dynamic>> row = List();
-  //-------------------Functions
 
   //hide/show table block
   void toggleTable(v) {
@@ -43,11 +43,6 @@ class _RecordShowState extends State<RecordShow> {
     accelStream = accelerometerEvents.listen((AccelerometerEvent event) {
       handler(event);
     });
-  }
-
-  // get the actuall time
-  now() {
-    return DateTime.now().millisecondsSinceEpoch;
   }
 
   //to pick accel data while time is running
@@ -64,32 +59,17 @@ class _RecordShowState extends State<RecordShow> {
     recordsRows.add(rowItem.toList());
   }
 
-  //timer from N second to zero
-  void startCountDown(counter, onEndcallBack) {
-    if (_timer != null) {
-      _timer.cancel();
-    }
-    _timer = Timer.periodic(Duration(seconds: 1), (timer) {
-      print('tiiimergh  $_counter');
-      if (_counter > 0) {
-        setState(() {
-          _counter--;
-        });
-      } else {
-        _timer.cancel();
-
-        onEndcallBack();
-      }
-    });
-  }
-
   //once he click on start recording: -take the time we started -time yan9os ,
   //activate the acc, show the table Data, stop recording
   startRecording() {
     startTime = now(); // to take the exact second we lunched the record
-    startCountDown(_counter, () {
-      stopRecording();
-    });
+    startCountDown(
+      initialValue: _counter,
+      onEnd: stopRecording(),
+      onTick: (cpt) => setState(() {
+        _counter = cpt;
+      }),
+    );
     startAccelerometer(handleAccelEvent);
     toggleTable(true);
   }
@@ -98,8 +78,8 @@ class _RecordShowState extends State<RecordShow> {
   stopRecording() {
     accelStream.cancel();
     toggleTable(false);
-    recordsRows.add(rows); //  send the acc data to make the csv file
-    getCsv(recordsRows); //check the csvMaker.dart
+    //  send the acc data to make the csv file
+    saveToCsv(recordsRows, AccelRecord.getHeader()); //check the csvMaker.dart
   }
 
   @override

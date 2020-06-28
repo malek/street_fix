@@ -4,16 +4,20 @@ class AccelRecord {
   double axeY;
   double axeZ;
   var tim;
-    AccelRecord({this.axeX,this.axeY,this.axeZ,this.tim});
-      List toList() {
-      List row = List();
-      row.add(this.tim);
-      row.add(this.axeX);
-      row.add(this.axeY);
-      row.add(this.axeZ);
 
-      return row;
-    }
+  // to make the gcsv head title
+  static List getHeader() {
+    return List.from(["Date", "Axis X", "Axis Y", "Axis Z"]);
+  }
 
+  AccelRecord({this.axeX, this.axeY, this.axeZ, this.tim});
+  List toList() {
+    List row = List();
+    row.add(this.tim);
+    row.add(this.axeX);
+    row.add(this.axeY);
+    row.add(this.axeZ);
 
+    return row;
+  }
 }
