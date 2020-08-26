@@ -6,6 +6,8 @@ import 'package:street_fix/types/accelRecord.dart';
 import 'package:street_fix/widgets/tableData.dart';
 import 'package:street_fix/functions/csvMaker.dart';
 import 'package:street_fix/functions/helper.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import '../src/locations.dart' as locations;
 
 class RecordShow extends StatefulWidget {
   @override
@@ -13,6 +15,26 @@ class RecordShow extends StatefulWidget {
 }
 
 class _RecordShowState extends State<RecordShow> {
+
+  final Map<String, Marker> _markers = {};
+  Future<void> _onMapCreated(GoogleMapController controller) async {
+    final googleOffices = await locations.getGoogleOffices();
+    setState(() {
+      _markers.clear();
+      for (final office in googleOffices.offices) {
+        final marker = Marker(
+          markerId: MarkerId(office.name),
+          position: LatLng(office.lat, office.lng),
+          infoWindow: InfoWindow(
+            title: office.name,
+            snippet: office.address,
+          ),
+        );
+        _markers[office.name] = marker;
+      }
+    });
+  }
+
   //-----------Declarations--------------
 
   // for acc data
@@ -65,7 +87,7 @@ class _RecordShowState extends State<RecordShow> {
     startTime = now(); // to take the exact second we lunched the record
     startCountDown(
       initialValue: _counter,
-      onEnd: stopRecording(),
+      onEnd: stopRecording,
       onTick: (cpt) => setState(() {
         _counter = cpt;
       }),
@@ -95,6 +117,18 @@ class _RecordShowState extends State<RecordShow> {
           width: MediaQuery.of(context).size.width,
           height: MediaQuery.of(context).size.height,
           child: Column(children: <Widget>[
+            Container(
+              width: 400,
+              height: 300,
+              child: GoogleMap(
+          onMapCreated: _onMapCreated,
+          initialCameraPosition: CameraPosition(
+            target: const LatLng(0, 0),
+            zoom: 2,
+          ),
+          markers: _markers.values.toSet(),
+        ),
+            ),
             Padding(
               padding: const EdgeInsets.only(top: 50),
               child: Row(

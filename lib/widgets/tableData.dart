@@ -38,7 +38,7 @@ class TableData extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: Text(
-                    "X Asis : ",
+                    "X Axis : ",
                     style: TextStyle(fontSize: 20.0),
                   ),
                 ),
@@ -56,7 +56,7 @@ class TableData extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: Text(
-                    "Y Asis : ",
+                    "Y Axis : ",
                     style: TextStyle(fontSize: 20.0),
                   ),
                 ),
@@ -74,7 +74,7 @@ class TableData extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: Text(
-                    "Z Asis : ",
+                    "Z Axis : ",
                     style: TextStyle(fontSize: 20.0),
                   ),
                 ),
@@ -89,7 +89,6 @@ class TableData extends StatelessWidget {
             ),
           ],
         ),
-        //RaisedButton(child:Text('i \'m Done') ,onPressed: (){})
       ],
     );
   }

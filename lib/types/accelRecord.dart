@@ -7,7 +7,7 @@ class AccelRecord {
 
   // to make the gcsv head title
   static List getHeader() {
-    return List.from(["Date", "Axis X", "Axis Y", "Axis Z"]);
+    return List.from(["Time", "Accel X", "Accel Y", "Accel Z"]);
   }
 
   AccelRecord({this.axeX, this.axeY, this.axeZ, this.tim});
