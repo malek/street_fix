@@ -80,16 +80,16 @@ class _RecordShowState extends State<RecordShow> {
     AccelRecord rowItem = new AccelRecord(axeX: x, axeY: y, axeZ: z, tim: t);
     recordsRows.add(rowItem.toList());
   }
-
   //once he click on start recording: -take the time we started -time yan9os ,
   //activate the acc, show the table Data, stop recording
   startRecording() {
     startTime = now(); // to take the exact second we lunched the record
     startCountDown(
       initialValue: _counter,
-      onEnd: stopRecording,
+      onEnd: stopRecording(),
       onTick: (cpt) => setState(() {
         _counter = cpt;
+        
       }),
     );
     startAccelerometer(handleAccelEvent);
@@ -143,7 +143,7 @@ class _RecordShowState extends State<RecordShow> {
                     width: 100.0,
                     child: TextField(
                       controller: timeControler,
-                      decoration: new InputDecoration(
+                      decoration:  InputDecoration(
                           focusedBorder: OutlineInputBorder(
                             borderSide: BorderSide(
                                 color: Colors.greenAccent, width: 5.0),
@@ -178,3 +178,7 @@ class _RecordShowState extends State<RecordShow> {
         ));
   }
 }
+
+
+
+
