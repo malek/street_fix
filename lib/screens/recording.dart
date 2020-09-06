@@ -112,11 +112,14 @@ class _RecordingState extends State<Recording> {
     saveToCsv(recordsRows, AccelRecord.getHeader()); //check the csvMaker.dart
   }
 
+  nonsensefunction(){}
   cancelButton(){
    
-      _timer.cancel();
+     startCountDown(
+       declaredValue: _timer,
+       onEnd: nonsensefunction(),
+     );
     
- 
       }
   @override
   Widget build(BuildContext context) {
@@ -192,7 +195,7 @@ class _RecordingState extends State<Recording> {
                         height: 45,
                         onPressed: () {
                           cancelButton();
-                        Navigator.pushReplacementNamed(context, '/welcome');                         
+                        Navigator.pushReplacementNamed(context, '/welcome');   
                         },
                         text: Text(
                           'Cancel ',
