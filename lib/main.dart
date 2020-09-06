@@ -22,7 +22,5 @@ void main() => runApp(MaterialApp(
               ));
         });
       },
-      //home: Recording(),
-      home: Welcome(),
     ));
 

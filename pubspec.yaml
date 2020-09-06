@@ -17,6 +17,7 @@ environment:
   sdk: ">=2.1.0 <3.0.0"
 
 dependencies:
+  oscilloscope: ^0.0.3
   ext_storage: ^1.0.3
   path_provider: ^1.6.11
   sensors: ^0.4.1+7

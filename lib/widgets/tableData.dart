@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:oscilloscope/oscilloscope.dart';
+
+
+
 //this widget is for dsplying data of (acc or gyro) in a table
 class TableData extends StatelessWidget {
   const TableData({
@@ -13,9 +17,12 @@ class TableData extends StatelessWidget {
   final double x;
   final double y;
   final double z;
+  //List<double> traceDust = [];
+
 
   @override
   Widget build(BuildContext context) {
+    
     return Column(
       children: <Widget>[
         Padding(
@@ -89,6 +96,10 @@ class TableData extends StatelessWidget {
             ),
           ],
         ),
+        SizedBox(height: 20,),
+        
+
+        //LineChartSample7(),
       ],
     );
   }

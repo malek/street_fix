@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:oscilloscope/oscilloscope.dart';
 import 'package:sensors/sensors.dart';
 import 'package:flutter/services.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -15,8 +16,6 @@ class Recording extends StatefulWidget {
   int counter;
   Recording({Key key, @required this.counter}) : super(key: key);
 
- 
-
   @override
   _RecordingState createState() => _RecordingState(counter);
 }
@@ -26,9 +25,12 @@ class _RecordingState extends State<Recording> {
 
   int counter;
 
-
-
 //-----------Declarations--------------
+
+//for the chart x bark
+  List<double> traceDustX = [];
+  List<double> traceDustY = [];
+  List<double> traceDustZ = [];
 
   // for acc data
   double x = 0, y = 0, z = 0;
@@ -39,7 +41,7 @@ class _RecordingState extends State<Recording> {
   Column results = Column();
 
   var startTime;
- Timer _timer;
+  Timer _timer;
   //lists for the Acceleromtre function
   List<List<dynamic>> recordsRows = List<List<dynamic>>();
   StreamSubscription accelStream; // it was  equal to null
@@ -112,18 +114,43 @@ class _RecordingState extends State<Recording> {
     saveToCsv(recordsRows, AccelRecord.getHeader()); //check the csvMaker.dart
   }
 
-  nonsensefunction(){}
-  cancelButton(){
-   
-     startCountDown(
-       declaredValue: _timer,
-       onEnd: nonsensefunction(),
-     );
-    
-      }
+  nonsensefunction() {}
+  cancelButton() {
+    startCountDown(
+      declaredValue: _timer,
+      onEnd: nonsensefunction(),
+    );
+  }
+
+  Widget Chartt(value, traceColor) {
+    var oscilloscope2 = Oscilloscope(
+      showYAxis: true,
+      padding: 0.0,
+      backgroundColor: Colors.transparent,
+      traceColor: traceColor,
+      dataSet: value,
+    );
+    var oscilloscope = oscilloscope2;
+    return oscilloscope;
+  }
+
+  Widget Osco() {
+    traceDustX.add(x);
+    traceDustY.add(y);
+    traceDustZ.add(z);
+    return Stack(
+      //alignment:new Alignment(x, y)
+      children: <Widget>[
+        Chartt(traceDustX, Color(0xff4f8a8b)),
+        Chartt(traceDustY, Color(0xffffd31d)),
+        Chartt(traceDustZ, Color(0xffb7472a)),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-   return Scaffold(
+    return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         elevation: 0,
@@ -183,36 +210,134 @@ class _RecordingState extends State<Recording> {
                   markers: _markers.values.toSet(),
                 ),
               ),
-              TableData(counter: counter, x: x, y: y, z: z),
+              //TableData(counter: counter, x: x, y: y, z: z),
               Expanded(
-                child: Container(
-                  child: Padding(
-                    padding: const EdgeInsets.all(15.0),
-                    child: Align(
-                      alignment: Alignment.bottomLeft,
-                      child: GradientButton(
-                        width: 140,
-                        height: 45,
-                        onPressed: () {
-                          cancelButton();
-                        Navigator.pushReplacementNamed(context, '/welcome');   
-                        },
-                        text: Text(
-                          'Cancel ',
-                          style: TextStyle(
-                            fontFamily: 'BreeSerif',
-                            color: Colors.yellowAccent,
-                            fontSize: 15,
-                            letterSpacing: 1,
-                          ),
+                  child: Column(
+                children: <Widget>[
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                          colors: [Color(0xffffae88), Color(0xff6a515e)],
                         ),
-                        icon: Icon(
-                          Icons.home,
-                          color: Colors.yellowAccent,
+                      ),
+                      width: MediaQuery.of(context).size.width * 0.9,
+                      height: MediaQuery.of(context).size.height * 0.2,
+                      child: Osco(),
+                    ),
+                  ),
+                  Text(
+                    'Accelerometre',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontFamily: 'BreeSerif',
+                      color: Color(0xff6a515e),
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                          colors: [Color(0xffffae88), Color(0xff6a515e)],
+                        ),
+                      ),
+                      width: MediaQuery.of(context).size.width * 0.9,
+                      height: MediaQuery.of(context).size.height * 0.2,
+                      child: Osco(),
+                    ),
+                  ),
+                  Text(
+                    'Gyroscope',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontFamily: 'BreeSerif',
+                      color: Color(0xff6a515e),
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ],
+              )),
+              Container(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: <Widget>[
+                    Padding(
+                      padding: const EdgeInsets.all(15.0),
+                      child: Align(
+                        alignment: Alignment.bottomLeft,
+                        child: GradientButton(
+                          width: 140,
+                          height: 45,
+                          onPressed: () {
+                            cancelButton();
+                            Navigator.pushReplacementNamed(context, '/welcome');
+                          },
+                          text: Text(
+                            'Cancel ',
+                            style: TextStyle(
+                              fontFamily: 'BreeSerif',
+                              color: Colors.yellowAccent,
+                              fontSize: 15,
+                              letterSpacing: 1,
+                            ),
+                          ),
+                          icon: Icon(
+                            Icons.home,
+                            color: Colors.yellowAccent,
+                          ),
                         ),
                       ),
                     ),
-                  ),
+                    Padding(
+                      padding: const EdgeInsets.all(15.0),
+                      child: Align(
+                        alignment: Alignment.bottomRight,
+                        child: Container(
+                          color: Colors.transparent,
+                          width: 140,
+                          height: 45,
+                          child: Row(
+                            children: <Widget>[
+                              Text(
+                                'X ',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontFamily: 'BreeSerif',
+                                  color: Color(0xff6a515e),
+                                ),
+                              ),
+                              Icon(Icons.timeline, color: Color(0xff4f8a8b)),
+                              Text(
+                                ' Y ',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontFamily: 'BreeSerif',
+                                  color: Color(0xff6a515e),
+                                ),
+                              ),
+                              Icon(Icons.timeline, color: Color(0xffffd31d)),
+                              Text(
+                                ' Z ',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontFamily: 'BreeSerif',
+                                  color: Color(0xff6a515e),
+                                ),
+                              ),
+                              Icon(Icons.timeline, color: Color(0xffb7472a)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
