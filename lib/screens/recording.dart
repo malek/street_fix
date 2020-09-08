@@ -53,12 +53,11 @@ class _RecordingState extends State<Recording> {
   //lists for the Acceleromtre function
   List<List<dynamic>> recordsRows = List<List<dynamic>>();
   List<List<dynamic>> recordsRowsgyro = List<List<dynamic>>();
-   List<List<dynamic>> rowcsvall = List<List<dynamic>>();
+  List<List<dynamic>> rowcsvall = List<List<dynamic>>();
   StreamSubscription accelStream; // it was  equal to null
   StreamSubscription gyroStream;
   // ignore: sort_constructors_first
   _RecordingState(this.counter);
- 
 
   Future<void> _onMapCreated(GoogleMapController controller) async {
     final googleOffices = await locations.getGoogleOffices();
@@ -81,11 +80,9 @@ class _RecordingState extends State<Recording> {
 
   Location location = new Location();
 
-bool _serviceEnabled;
-PermissionStatus _permissionGranted;
-LocationData _locationData;
-
-
+  bool _serviceEnabled;
+  PermissionStatus _permissionGranted;
+  LocationData _locationData;
 
   //to catch up the sensor data
   startAccelerometer(handler) {
@@ -93,6 +90,7 @@ LocationData _locationData;
       handler(event);
     });
   }
+
   startGyroscope(handler) {
     gyroStream = gyroscopeEvents.listen((GyroscopeEvent event) {
       handler(event);
@@ -105,9 +103,10 @@ LocationData _locationData;
       xaccel = event.x;
       yaccel = event.y;
       zaccel = event.z;
-    });}
+    });
+  }
 
-    //to pick gyro data while time is running
+  //to pick gyro data while time is running
   handleGyroscope(event) {
     setState(() {
       xgyro = event.x;
@@ -120,26 +119,31 @@ LocationData _locationData;
     var t = now() - startTime; //to have the time we record each x y z
     var rowItem = AccelRecord(axeX: xaccel, axeY: yaccel, axeZ: zaccel, tim: t);
     var rowItemGyro = GyroRecord(axeX: xgyro, axeY: ygyro, axeZ: zgyro);
-   recordsRows.add(rowItem.toList());
+    recordsRows.add(rowItem.toList());
     recordsRowsgyro.add(rowItemGyro.toList());
   }
+
   //once the timer finished: -hide table , send the Acc data to csv file
   stopRecording() {
     accelStream.cancel();
     gyroStream.cancel();
     //  send the acc and gyro data to make the csv file
-  
-  for (var i = 0 , j = 0 ; i < recordsRows.length && j < recordsRowsgyro.length ; i++, j++) {
 
-  rowcsvall.add([recordsRows[i], recordsRowsgyro[j]].expand((x) => x).toList()) ;
-}
+    for (var i = 0, j = 0;
+        i < recordsRows.length && j < recordsRowsgyro.length;
+        i++, j++) {
+      rowcsvall
+          .add([recordsRows[i], recordsRowsgyro[j]].expand((x) => x).toList());
+    }
 
-var header = AccelRecord.getHeader()+ GyroRecord.getHeader();//check the csvMaker.dart
+    var header = AccelRecord.getHeader() +
+        GyroRecord.getHeader(); //check the csvMaker.dart
     saveToCsv(rowcsvall, header);
   }
 
   startRecording() {
     //func();
+    getLocation();
     startTime = now(); // to take the exact second we lunched the record
     startCountDown(
       declaredValue: _timer,
@@ -152,31 +156,33 @@ var header = AccelRecord.getHeader()+ GyroRecord.getHeader();//check the csvMake
     startAccelerometer(handleAccelEvent);
     startGyroscope(handleGyroscope);
   }
-//   func() async {
-//     _serviceEnabled = await location.serviceEnabled();
-// if (!_serviceEnabled) {
-//   _serviceEnabled = await location.requestService();
-//   if (!_serviceEnabled) {
-//     return;
-//   }
-// }
 
-// _permissionGranted = await location.hasPermission();
-// if (_permissionGranted == PermissionStatus.denied) {
-//   _permissionGranted = await location.requestPermission();
-//   if (_permissionGranted != PermissionStatus.granted) {
-//     return;
-//   }
-// }
+  getLocation() async {
+    _serviceEnabled = await location.serviceEnabled();
+    if (!_serviceEnabled) {
+      _serviceEnabled = await location.requestService();
+      if (!_serviceEnabled) {
+        return;
+      }
+    }
 
-// _locationData = await location.getLocation();
-// print('voilaaaa location');
-// print(_locationData);
-//   }
- @override
+    _permissionGranted = await location.hasPermission();
+    if (_permissionGranted == PermissionStatus.denied) {
+      _permissionGranted = await location.requestPermission();
+      if (_permissionGranted != PermissionStatus.granted) {
+        return;
+      }
+    }
+
+    _locationData = await location.getLocation();
+    print('voilaaaa location');
+    print(_locationData);
+  }
+
+  @override
   void initState() {
     super.initState();
-  
+
     startRecording();
   }
 
@@ -203,31 +209,31 @@ var header = AccelRecord.getHeader()+ GyroRecord.getHeader();//check the csvMake
   }
 
   Widget Osco(testGraph) {
-    if(testGraph == 'accel'){
+    if (testGraph == 'accel') {
       traceAceeltX.add(xaccel);
-    traceAceeltY.add(yaccel);
-    traceAceeltZ.add(zaccel);
-     return Stack(
-      //alignment:new Alignment(x, y)
-      children: <Widget>[
-        Chartt(traceAceeltX, Color(0xff4f8a8b)),
-        Chartt(traceAceeltY, Color(0xffffd31d)),
-        Chartt(traceAceeltZ, Color(0xffb7472a)),
-      ],
-    );
+      traceAceeltY.add(yaccel);
+      traceAceeltZ.add(zaccel);
+      return Stack(
+        //alignment:new Alignment(x, y)
+        children: <Widget>[
+          Chartt(traceAceeltX, Color(0xff4f8a8b)),
+          Chartt(traceAceeltY, Color(0xffffd31d)),
+          Chartt(traceAceeltZ, Color(0xffb7472a)),
+        ],
+      );
     }
-    if(testGraph == 'gyro'){
-    traceGyroX.add(xgyro);
-    traceGyroY.add(ygyro);
-    traceGyroZ.add(zgyro);
-    return Stack(
-      //alignment:new Alignment(x, y)
-      children: <Widget>[
-        Chartt(traceGyroX, Color(0xff4f8a8b)),
-        Chartt(traceGyroY, Color(0xffffd31d)),
-        Chartt(traceGyroZ, Color(0xffb7472a)),
-      ],
-    );
+    if (testGraph == 'gyro') {
+      traceGyroX.add(xgyro);
+      traceGyroY.add(ygyro);
+      traceGyroZ.add(zgyro);
+      return Stack(
+        //alignment:new Alignment(x, y)
+        children: <Widget>[
+          Chartt(traceGyroX, Color(0xff4f8a8b)),
+          Chartt(traceGyroY, Color(0xffffd31d)),
+          Chartt(traceGyroZ, Color(0xffb7472a)),
+        ],
+      );
     }
   }
 
@@ -296,7 +302,6 @@ var header = AccelRecord.getHeader()+ GyroRecord.getHeader();//check the csvMake
               ),
               //TableData(counter: counter, x: x, y: y, z: z),
               Expanded(
-                  
                 child: Column(
                   children: <Widget>[
                     Padding(
@@ -347,8 +352,6 @@ var header = AccelRecord.getHeader()+ GyroRecord.getHeader();//check the csvMake
                         fontStyle: FontStyle.italic,
                       ),
                     ),
-                    
-                   
                   ],
                 ),
               ),
