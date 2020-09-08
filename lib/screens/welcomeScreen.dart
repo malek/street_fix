@@ -1,8 +1,10 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:street_fix/types/passedData.dart';
 import 'package:street_fix/widgets/curved_widget.dart';
-import 'package:street_fix/widgets/gardien_button.dart';
+import 'package:street_fix/widgets/gardien_buttonWidget.dart';
+import 'package:location/location.dart';
+//import 'package:street_fix/widgets/widget.dart';
 
 class Welcome extends StatefulWidget {
   @override
@@ -17,6 +19,11 @@ class _WelcomeState extends State<Welcome> {
 
   // time counter from n second to zero
   int _counter;
+//for gps permission
+  Location location = Location();
+  bool _serviceEnabled;
+  PermissionStatus _permissionGranted;
+  LocationData _locationData;
 
   @override
   Widget build(BuildContext context) {
@@ -42,10 +49,7 @@ class _WelcomeState extends State<Welcome> {
                         gradient: LinearGradient(
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.yellow,
-                            Colors.white.withOpacity(1)
-                          ],
+                          colors: [Colors.yellow, Colors.white.withOpacity(1)],
                         ),
                       ),
                       child: Column(
@@ -108,14 +112,44 @@ class _WelcomeState extends State<Welcome> {
               GradientButton(
                 width: 150,
                 height: 45,
-                onPressed: () {
+                onPressed: () async {
                   setState(() {
                     _counter = int.parse(timeControler
                         .text); //to convert the text input to int -time-
                   });
 
-                  Navigator.pushReplacementNamed(context, '/recording', arguments: _counter);
-                
+                  _serviceEnabled = await location.serviceEnabled();
+                  if (_serviceEnabled) {
+                    _locationData = await location.getLocation();
+                    var passedArguments = PassedArguments(
+                        count: _counter, location: _locationData);
+                    print('voilaaaa location');
+                    print(_locationData);
+                     await Navigator.pushReplacementNamed(context, '/recordingScreen',arguments:
+
+                       passedArguments,
+                     );
+                    // Navigator.pushReplacementNamed(
+                    //     context, '/doneRecordingScreen');
+                  }
+                  if (!_serviceEnabled) {
+                    _serviceEnabled = await location.requestService();
+                    if (!_serviceEnabled) {
+                      showAlertDialog(context);
+                      return;
+                    }
+                  }
+
+                  _permissionGranted = await location.hasPermission();
+                  if (_permissionGranted == PermissionStatus.denied) {
+                    _permissionGranted = await location.requestPermission();
+                    await Navigator.pushReplacementNamed(
+                        context, '/recordingScreen',
+                        arguments: _counter);
+                    if (_permissionGranted != PermissionStatus.granted) {
+                      return;
+                    }
+                  }
                 },
                 text: Text(
                   'Record',
@@ -165,4 +199,58 @@ class _WelcomeState extends State<Welcome> {
       ),
     );
   }
+}
+
+showAlertDialog(BuildContext context) {
+  // Create button
+  Widget okButton = RaisedButton(
+    //color: Color(0xffffae88),
+    onPressed: () {
+      Navigator.of(context).pop();
+    },
+    child: Text(
+      'OK',
+      style: TextStyle(
+        fontFamily: 'BreeSerif',
+        color: Color(0xff6a515e),
+        fontSize: 20,
+        letterSpacing: 1,
+      ),
+    ),
+  );
+
+  // Create AlertDialog
+  var alert = AlertDialog(
+    title: Center(
+        child: Text(
+      'Ooops',
+      style: TextStyle(
+        fontFamily: 'BreeSerif',
+        color: Color(0xff6a515e),
+        fontSize: 20,
+        letterSpacing: 1,
+      ),
+    )),
+    content: Text(
+      "You can't record without activating the GPS.",
+      style: TextStyle(
+        fontFamily: 'BreeSerif',
+        color: Colors.black,
+        fontSize: 15,
+        letterSpacing: 1,
+      ),
+    ),
+    backgroundColor: Colors.yellow[100],
+    actions: [
+      okButton,
+    ],
+  );
+
+  // show the dialog
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return alert;
+    },
+  );
 }

@@ -5,28 +5,33 @@ import 'package:sensors/sensors.dart';
 import 'package:flutter/services.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:street_fix/types/accelRecord.dart';
+import 'package:street_fix/types/gpsRecord.dart';
 import 'package:street_fix/types/gyroRecord.dart';
-import 'package:street_fix/widgets/tableData.dart';
+import 'package:street_fix/types/passedData.dart';
+import 'package:street_fix/widgets/tableDataWidget.dart';
 import 'package:street_fix/functions/csvMaker.dart';
 import 'package:street_fix/functions/helper.dart';
 import '../src/locations.dart' as locations;
 import 'package:location/location.dart';
-
-import 'package:street_fix/widgets/gardien_button.dart'; //to add cancel recording
+import 'package:street_fix/widgets/gardien_buttonWidget.dart'; //to add cancel recording
 
 class Recording extends StatefulWidget {
-  int counter;
-  Recording({Key key, @required this.counter}) : super(key: key);
-
+  // int counter;
+  // LocationData curentLocation;
+  PassedArguments recievedData;
+  //Recording({Key key, @required this.counter, this.curentLocation}) : super(key: key);
+  Recording({Key key, @required this.recievedData}) : super(key: key);
   @override
-  _RecordingState createState() => _RecordingState(counter);
+  //_RecordingState createState() => _RecordingState(counter,curentLocation);
+  _RecordingState createState() => _RecordingState(recievedData);
 }
 
 class _RecordingState extends State<Recording> {
   final Map<String, Marker> _markers = {};
 
-  int counter;
-
+  //int counter;
+  //LocationData curentLocation;
+  PassedArguments recievedData;
 //-----------Declarations--------------
 
 //for the chart of accel
@@ -40,24 +45,23 @@ class _RecordingState extends State<Recording> {
 
   // for acc data
   double xaccel = 0, yaccel = 0, zaccel = 0;
-  // for acc gyro
+  // for gyro data
   double xgyro = 0, ygyro = 0, zgyro = 0;
-  //for the visibility of the block(Acc table, countDown number)
-  bool visble = false;
-
-  //column for x y z table * in the begining ykon displayed*
-  Column results = Column();
+  // for gps data
+  double currentLatitude = 0, currentLongitude = 0, currentspeed = 0;
 
   var startTime;
   Timer _timer;
-  //lists for the Acceleromtre function
-  List<List<dynamic>> recordsRows = List<List<dynamic>>();
-  List<List<dynamic>> recordsRowsgyro = List<List<dynamic>>();
-  List<List<dynamic>> rowcsvall = List<List<dynamic>>();
-  StreamSubscription accelStream; // it was  equal to null
+
+  //lists for the Acceleromtre/Gyroscope/Gps function
+  List<List<dynamic>> recordsRows = <List<dynamic>>[];
+
+  StreamSubscription accelStream;
   StreamSubscription gyroStream;
+  Location location = Location();
+
   // ignore: sort_constructors_first
-  _RecordingState(this.counter);
+  _RecordingState(this.recievedData);
 
   Future<void> _onMapCreated(GoogleMapController controller) async {
     final googleOffices = await locations.getGoogleOffices();
@@ -76,15 +80,8 @@ class _RecordingState extends State<Recording> {
       }
     });
   }
-  // for the location and gps things
 
-  Location location = new Location();
-
-  bool _serviceEnabled;
-  PermissionStatus _permissionGranted;
-  LocationData _locationData;
-
-  //to catch up the sensor data
+  //to catch up the sensors -accel, gyro, gps- data
   startAccelerometer(handler) {
     accelStream = accelerometerEvents.listen((AccelerometerEvent event) {
       handler(event);
@@ -97,6 +94,13 @@ class _RecordingState extends State<Recording> {
     });
   }
 
+  startGps(handler) {
+    location.onLocationChanged.listen((LocationData currentLocation) {
+      handler(currentLocation);
+      // Use current location
+    });
+  }
+
   //to pick accel data while time is running
   handleAccelEvent(event) {
     setState(() {
@@ -104,6 +108,13 @@ class _RecordingState extends State<Recording> {
       yaccel = event.y;
       zaccel = event.z;
     });
+  }
+
+  //to pick gps data while time is running
+  handleGpsEvent(currentLocation) {
+    currentLatitude = currentLocation.latitude;
+    currentLongitude = currentLocation.longitude;
+    currentspeed = currentLocation.speed;
   }
 
   //to pick gyro data while time is running
@@ -114,75 +125,56 @@ class _RecordingState extends State<Recording> {
       zgyro = event.z;
     });
 
-    //In the fllwing lines : put the Acc data in a rowItem object
+    //In the fllwing lines : put the Acc/gyro/gps data in a rows object
     //send the object to list of rows 'named recordRows' to prepare a csv file
+
     var t = now() - startTime; //to have the time we record each x y z
-    var rowItem = AccelRecord(axeX: xaccel, axeY: yaccel, axeZ: zaccel, tim: t);
+    var rowItemAccel =
+        AccelRecord(axeX: xaccel, axeY: yaccel, axeZ: zaccel, tim: t);
     var rowItemGyro = GyroRecord(axeX: xgyro, axeY: ygyro, axeZ: zgyro);
-    recordsRows.add(rowItem.toList());
-    recordsRowsgyro.add(rowItemGyro.toList());
+    var rowGpsItem = GpsRecord(
+        lat: currentLatitude, long: currentLongitude, speed: currentspeed);
+
+    recordsRows.add(
+        rowItemAccel.toList() + rowItemGyro.toList() + rowGpsItem.toList());
   }
 
-  //once the timer finished: -hide table , send the Acc data to csv file
+  //once the timer finished: send the accel/gyro/gps row to csv - show DonePage
   stopRecording() {
     accelStream.cancel();
     gyroStream.cancel();
-    //  send the acc and gyro data to make the csv file
 
-    for (var i = 0, j = 0;
-        i < recordsRows.length && j < recordsRowsgyro.length;
-        i++, j++) {
-      rowcsvall
-          .add([recordsRows[i], recordsRowsgyro[j]].expand((x) => x).toList());
-    }
-
+    ///TODO: cancel location thing
     var header = AccelRecord.getHeader() +
-        GyroRecord.getHeader(); //check the csvMaker.dart
-    saveToCsv(rowcsvall, header);
+        GyroRecord.getHeader() +
+        GpsRecord.getHeader(); //check the csvMaker.dart
+    saveToCsv(recordsRows, header);
+    Navigator.pushReplacementNamed(context, '/doneRecordingScreen');
   }
 
   startRecording() {
-    //func();
-    getLocation();
+    setState(() {
+      currentLatitude = recievedData.location.latitude;
+      currentLongitude = recievedData.location.longitude;
+      currentspeed = recievedData.location.speed;
+    });
     startTime = now(); // to take the exact second we lunched the record
     startCountDown(
       declaredValue: _timer,
-      initialValue: counter,
+      initialValue: recievedData.count,
       onEnd: stopRecording,
       onTick: (cpt) => setState(() {
-        counter = cpt;
+        recievedData.count = cpt;
       }),
     );
     startAccelerometer(handleAccelEvent);
     startGyroscope(handleGyroscope);
-  }
-
-  getLocation() async {
-    _serviceEnabled = await location.serviceEnabled();
-    if (!_serviceEnabled) {
-      _serviceEnabled = await location.requestService();
-      if (!_serviceEnabled) {
-        return;
-      }
-    }
-
-    _permissionGranted = await location.hasPermission();
-    if (_permissionGranted == PermissionStatus.denied) {
-      _permissionGranted = await location.requestPermission();
-      if (_permissionGranted != PermissionStatus.granted) {
-        return;
-      }
-    }
-
-    _locationData = await location.getLocation();
-    print('voilaaaa location');
-    print(_locationData);
+    startGps(handleGpsEvent);
   }
 
   @override
   void initState() {
     super.initState();
-
     startRecording();
   }
 

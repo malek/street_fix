@@ -3,26 +3,14 @@ import 'package:oscilloscope/oscilloscope.dart';
 
 
 
-//this widget is for dsplying data of (acc or gyro) in a table
+//this widget is for dsplying data of (acc or gyro) in a chart
 class ChartTracer extends StatelessWidget {
   const ChartTracer({
     Key key,
     @required  this.x,
-   // @required this.x,
-    //@required this.y,
-   // @required this.z,
   }) :  super(key: key);
 
-  //final int _counter;
-  // final List<double> xValue = List();
-  // final List<double> yValue = List();
-  // final List<double> zValue = List();
   final double x;
-  //final double y;
- // final double z;
-  //List<double> traceDust = [];
-
-
   @override
   Widget build(BuildContext context) {
     List<double> traceDust = [];

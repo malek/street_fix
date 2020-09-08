@@ -17,7 +17,6 @@ class TableData extends StatelessWidget {
   final double x;
   final double y;
   final double z;
-  //List<double> traceDust = [];
 
 
   @override
