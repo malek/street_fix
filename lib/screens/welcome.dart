@@ -1,8 +1,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:street_fix/screens/recordShow.dart';
-import 'package:street_fix/screens/recording.dart';
 import 'package:street_fix/widgets/curved_widget.dart';
 import 'package:street_fix/widgets/gardien_button.dart';
 
@@ -32,7 +30,6 @@ class _WelcomeState extends State<Welcome> {
         child: Container(
           width: MediaQuery.of(context).size.width,
           height: MediaQuery.of(context).size.height,
-          //height: double.infinity,
           child: Column(
             children: <Widget>[
               Stack(children: <Widget>[
@@ -47,7 +44,7 @@ class _WelcomeState extends State<Welcome> {
                           end: Alignment.bottomCenter,
                           colors: [
                             Colors.yellow,
-                            Colors.white.withOpacity(0.4)
+                            Colors.white.withOpacity(1)
                           ],
                         ),
                       ),

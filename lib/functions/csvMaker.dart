@@ -6,7 +6,10 @@ import 'package:path_provider/path_provider.dart';
 
 Future<File> _write(String csvContent) async {
   final directory = await getExternalStorageDirectory();
-  final File file = File('${directory.path}/Recording.csv');
+  var filename = 'Recording '+DateTime.now().toString().replaceAll(RegExp(r"[:\.]"), "-");
+  //+ DateTime.now().toString();
+  // 
+  final  file = File('${directory.path}/$filename.csv');
 
   // Write the file.
   return file.writeAsString('$csvContent');
