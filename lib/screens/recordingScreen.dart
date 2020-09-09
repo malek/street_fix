@@ -16,10 +16,8 @@ import 'package:location/location.dart';
 import 'package:street_fix/widgets/gardien_buttonWidget.dart'; //to add cancel recording
 
 class Recording extends StatefulWidget {
-  // int counter;
-  // LocationData curentLocation;
+
   PassedArguments recievedData;
-  //Recording({Key key, @required this.counter, this.curentLocation}) : super(key: key);
   Recording({Key key, @required this.recievedData}) : super(key: key);
   @override
   //_RecordingState createState() => _RecordingState(counter,curentLocation);
@@ -58,6 +56,7 @@ class _RecordingState extends State<Recording> {
 
   StreamSubscription accelStream;
   StreamSubscription gyroStream;
+  StreamSubscription locationStream;
   Location location = Location();
 
   // ignore: sort_constructors_first
@@ -140,16 +139,21 @@ class _RecordingState extends State<Recording> {
   }
 
   //once the timer finished: send the accel/gyro/gps row to csv - show DonePage
-  stopRecording() {
+  stopRecording({saveResults = true}) {
+     _timer.cancel();
+     print('timer cancled??');
     accelStream.cancel();
     gyroStream.cancel();
-
+  //  locationStream.cancel();
     ///TODO: cancel location thing
-    var header = AccelRecord.getHeader() +
-        GyroRecord.getHeader() +
-        GpsRecord.getHeader(); //check the csvMaker.dart
-    saveToCsv(recordsRows, header);
-    Navigator.pushReplacementNamed(context, '/doneRecordingScreen');
+   
+    if (saveResults) {
+      var header = AccelRecord.getHeader() +
+          GyroRecord.getHeader() +
+          GpsRecord.getHeader(); //check the csvMaker.dart
+      saveToCsv(recordsRows, header);
+      Navigator.pushReplacementNamed(context, '/doneRecordingScreen');
+    }
   }
 
   startRecording() {
@@ -159,14 +163,16 @@ class _RecordingState extends State<Recording> {
       currentspeed = recievedData.location.speed;
     });
     startTime = now(); // to take the exact second we lunched the record
-    startCountDown(
-      declaredValue: _timer,
+    print('this print is before start count down function timer is : $_timer');
+    _timer=startCountDown(
+      timer: _timer,
       initialValue: recievedData.count,
-      onEnd: stopRecording,
+      onEnd:  stopRecording,
       onTick: (cpt) => setState(() {
         recievedData.count = cpt;
       }),
     );
+    print('this print is before start count down function timer is : $_timer');
     startAccelerometer(handleAccelEvent);
     startGyroscope(handleGyroscope);
     startGps(handleGpsEvent);
@@ -178,13 +184,10 @@ class _RecordingState extends State<Recording> {
     startRecording();
   }
 
-  nonsensefunction() {}
-  cancelButton() {
-    startCountDown(
-      declaredValue: _timer,
-      onEnd: nonsensefunction(),
-    );
-  }
+
+   cancelButton() async => stopRecording(
+     saveResults:  false,
+   );
 
   Widget Chartt(value, traceColor) {
     var oscilloscope2 = Oscilloscope(
@@ -226,6 +229,10 @@ class _RecordingState extends State<Recording> {
           Chartt(traceGyroZ, Color(0xffb7472a)),
         ],
       );
+      
+    }
+    else {
+      return Text('Error To load Charts');
     }
   }
 
@@ -360,7 +367,7 @@ class _RecordingState extends State<Recording> {
                           height: 45,
                           onPressed: () {
                             cancelButton();
-                            Navigator.pushReplacementNamed(context, '/welcome');
+                            Navigator.pushReplacementNamed(context, '/welcomeScreen');
                           },
                           text: Text(
                             'Cancel ',

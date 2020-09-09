@@ -6,20 +6,21 @@ int now() {
 }
 
 //timer from N second to zero
-void startCountDown({declaredValue, initialValue, onTick, onEnd}) {
- // Timer _timer;
-  if (declaredValue != null) {
-    declaredValue.cancel();
+ Timer startCountDown({timer, initialValue, onTick, onEnd}) {
+  Timer newTimer;
+  if (timer != null) {
+    timer.cancel();
   }
   var cpt = initialValue;
   
-  declaredValue = Timer.periodic(Duration(seconds: 1), (timer) {
+  newTimer = Timer.periodic(Duration(seconds: 1), (timer) {
     if (cpt > 0) {
       cpt--;
       onTick(cpt);
     } else {
-      declaredValue.cancel();
+      timer.cancel();
       onEnd();
     }
   });
+  return newTimer;
 }

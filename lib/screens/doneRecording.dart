@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:street_fix/types/passedData.dart';
@@ -26,11 +27,11 @@ class _DoneRecordingScreenState extends State<DoneRecordingScreen> {
   @override
   void initState() {
     super.initState();
-    // showAlertDialog(
-    //     context,
-    //     'Your recording is Done.',
-    //     'Press the Send Data button in order to send the data to be worked on \n Thank you',
-    //     'Deal');
+    showAlertDialog(
+        context,
+        'Your recording is Done.',
+        'Press the Send Data button in order to send the data to be worked on. \n Thank you.',
+        'Deal');
   }
 
 
@@ -239,7 +240,8 @@ class _DoneRecordingScreenState extends State<DoneRecordingScreen> {
   }
 }
 
-showAlertDialog(BuildContext context, title, description, buttontText) {
+showAlertDialog( contextt, title, description, buttontText) async {
+  BuildContext context = await contextt;
   // Create button
   Widget okButton = RaisedButton(
     //color: Color(0xffffae88),
@@ -285,7 +287,7 @@ showAlertDialog(BuildContext context, title, description, buttontText) {
   );
 
   // show the dialog
-  showDialog(
+  await showDialog(
     context: context,
     builder: (BuildContext context) {
       return alert;
