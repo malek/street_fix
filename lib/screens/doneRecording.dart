@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:street_fix/types/passedData.dart';
@@ -33,7 +32,6 @@ class _DoneRecordingScreenState extends State<DoneRecordingScreen> {
         'Press the Send Data button in order to send the data to be worked on. \n Thank you.',
         'Deal');
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -211,7 +209,13 @@ class _DoneRecordingScreenState extends State<DoneRecordingScreen> {
                           child: GradientButton(
                             width: 150,
                             height: 45,
-                            onPressed: () {},
+                            onPressed: () {
+                              showAlertDialog(
+                                  context,
+                                  'Send Data.',
+                                  'All your records will be sent to be processed to the server.',
+                                  'ok');
+                            },
                             text: Text(
                               'Send Data',
                               style: TextStyle(
@@ -240,7 +244,7 @@ class _DoneRecordingScreenState extends State<DoneRecordingScreen> {
   }
 }
 
-showAlertDialog( contextt, title, description, buttontText) async {
+showAlertDialog(contextt, title, description, buttontText) async {
   BuildContext context = await contextt;
   // Create button
   Widget okButton = RaisedButton(
