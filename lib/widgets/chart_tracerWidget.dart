@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:oscilloscope/oscilloscope.dart';
 
-
+///TODO: this widget need to be used :D 
 
 //this widget is for dsplying data of (acc or gyro) in a chart
 class ChartTracer extends StatelessWidget {

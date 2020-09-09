@@ -2,6 +2,7 @@ import 'dart:async';
 
 // get the actuall time
 int now() {
+  ///TODO: change it to mnts
   return DateTime.now().millisecondsSinceEpoch;
 }
 
