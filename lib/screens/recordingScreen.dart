@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:oscilloscope/oscilloscope.dart';
 import 'package:sensors/sensors.dart';
@@ -62,6 +63,15 @@ class _RecordingState extends State<Recording> {
   // ignore: sort_constructors_first
   _RecordingState(this.recievedData);
 
+  // double lat = recievedData.location.latitude;
+  // double lng = recievedData.location.longitude;
+// static final CameraPosition initialLocation = CameraPosition(
+//   target: LatLng(recievedData.location.latitude, recievedData.location.longitude) ,
+// zoom: 14.4746,
+// );
+
+
+  
   Future<void> _onMapCreated(GoogleMapController controller) async {
     final googleOffices = await locations.getGoogleOffices();
     setState(() {
@@ -79,6 +89,71 @@ class _RecordingState extends State<Recording> {
       }
     });
   }
+ StreamSubscription _locationSubscription;
+  Location _locationTracker = Location();
+Marker marker;
+  Circle circle;
+    GoogleMapController _controller;
+
+  Future<Uint8List> getMarker() async {
+    ByteData byteData = await DefaultAssetBundle.of(context).load("assets/car_icon.png");
+    return byteData.buffer.asUint8List();
+  }
+void updateMarkerAndCircle(LocationData newLocalData, Uint8List imageData) {
+    LatLng latlng = LatLng(newLocalData.latitude, newLocalData.longitude);
+    this.setState(() {
+      marker = Marker(
+          markerId: MarkerId("home"),
+          position: latlng,
+          rotation: newLocalData.heading,
+          draggable: false,
+          zIndex: 2,
+          flat: true,
+          anchor: Offset(0.5, 0.5),
+          icon: BitmapDescriptor.fromBytes(imageData));
+      circle = Circle(
+          circleId: CircleId("car"),
+          radius: newLocalData.accuracy,
+          zIndex: 1,
+          strokeColor: Colors.blue,
+          center: latlng,
+          fillColor: Colors.blue.withAlpha(70));
+    });
+  }
+
+
+  void getCurrentLocation() async {
+    try {
+
+      Uint8List imageData = await getMarker();
+      var location = await _locationTracker.getLocation();
+
+      updateMarkerAndCircle(location, imageData);
+
+      if (_locationSubscription != null) {
+        _locationSubscription.cancel();
+      }
+
+
+      _locationSubscription = _locationTracker.onLocationChanged.listen((newLocalData) {
+        if (_controller != null) {
+          _controller.animateCamera(CameraUpdate.newCameraPosition(new CameraPosition(
+              bearing: 192.8334901395799,
+              target: LatLng(newLocalData.latitude, newLocalData.longitude),
+              tilt: 0,
+              zoom: 18.00)));
+          updateMarkerAndCircle(newLocalData, imageData);
+        }
+      });
+
+    } on PlatformException catch (e) {
+      if (e.code == 'PERMISSION_DENIED') {
+        debugPrint("Permission Denied");
+      }
+    }
+  }
+
+
 
   //to catch up the sensors -accel, gyro, gps- data
   startAccelerometer(handler) {
@@ -141,7 +216,6 @@ class _RecordingState extends State<Recording> {
   //once the timer finished: send the accel/gyro/gps row to csv - show DonePage
   stopRecording({saveResults = true}) {
      _timer.cancel();
-     print('timer cancled??');
     accelStream.cancel();
     gyroStream.cancel();
   //  locationStream.cancel();
@@ -163,7 +237,6 @@ class _RecordingState extends State<Recording> {
       currentspeed = recievedData.location.speed;
     });
     startTime = now(); // to take the exact second we lunched the record
-    print('this print is before start count down function timer is : $_timer');
     _timer=startCountDown(
       timer: _timer,
       initialValue: recievedData.count,
@@ -172,10 +245,11 @@ class _RecordingState extends State<Recording> {
         recievedData.count = cpt;
       }),
     );
-    print('this print is before start count down function timer is : $_timer');
+
     startAccelerometer(handleAccelEvent);
     startGyroscope(handleGyroscope);
     startGps(handleGpsEvent);
+    getCurrentLocation();
   }
 
   @override
@@ -291,11 +365,21 @@ class _RecordingState extends State<Recording> {
                 width: MediaQuery.of(context).size.width * 0.9,
                 height: MediaQuery.of(context).size.height * 0.3,
                 child: GoogleMap(
-                  onMapCreated: _onMapCreated,
+                  mapType: MapType.hybrid,
                   initialCameraPosition: CameraPosition(
-                    target: const LatLng(0, 0),
-                    zoom: 2,
-                  ),
+                        target: LatLng(recievedData.location.latitude, recievedData.location.longitude) ,
+                        zoom: 14.4746,
+                ),
+                  markers: Set.of((marker != null) ? [marker] : []),
+                  circles: Set.of((circle != null) ? [circle] : []),
+                  // onMapCreated : (GoogleMapController controller){
+                  //   _controller = controller;
+                  // }
+                  onMapCreated: _onMapCreated,
+                  // initialCameraPosition: CameraPosition(
+                  //   target: const LatLng(0, 0),
+                  //   zoom: 2,
+                  // ),
                   //markers: _markers.values.toSet(),
                 ),
               ),
