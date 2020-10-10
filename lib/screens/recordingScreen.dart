@@ -1,15 +1,18 @@
 import 'dart:async';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart';
 import 'package:oscilloscope/oscilloscope.dart';
 import 'package:sensors/sensors.dart';
 import 'package:flutter/services.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:street_fix/model/street_fix_Request.dart';
+import 'package:street_fix/model/street_fix_Response.dart';
+import 'package:street_fix/network_utils/street_fix_utils.dart';
 import 'package:street_fix/types/accelRecord.dart';
 import 'package:street_fix/types/gpsRecord.dart';
 import 'package:street_fix/types/gyroRecord.dart';
 import 'package:street_fix/types/passedData.dart';
-import 'package:street_fix/widgets/tableDataWidget.dart';
 import 'package:street_fix/functions/csvMaker.dart';
 import 'package:street_fix/functions/helper.dart';
 import '../src/locations.dart' as locations;
@@ -26,10 +29,10 @@ class Recording extends StatefulWidget {
 }
 
 class _RecordingState extends State<Recording> {
+  StreetfixRequest streetData; 
+
   final Map<String, Marker> _markers = {};
 
-  //int counter;
-  //LocationData curentLocation;
   PassedArguments recievedData;
 //-----------Declarations--------------
 
@@ -63,12 +66,6 @@ class _RecordingState extends State<Recording> {
   // ignore: sort_constructors_first
   _RecordingState(this.recievedData);
 
-  // double lat = recievedData.location.latitude;
-  // double lng = recievedData.location.longitude;
-// static final CameraPosition initialLocation = CameraPosition(
-//   target: LatLng(recievedData.location.latitude, recievedData.location.longitude) ,
-// zoom: 14.4746,
-// );
 
 
   
@@ -212,23 +209,36 @@ void updateMarkerAndCircle(LocationData newLocalData, Uint8List imageData) {
     recordsRows.add(
         rowItemAccel.toList() + rowItemGyro.toList() + rowGpsItem.toList());
   }
-
-  //once the timer finished: send the accel/gyro/gps row to csv - show DonePage
-  stopRecording({saveResults = true}) {
-     _timer.cancel();
-    accelStream.cancel();
-    gyroStream.cancel();
-  //  locationStream.cancel();
-    ///TODO: cancel location thing
-   
-    if (saveResults) {
-      var header = AccelRecord.getHeader() +
-          GyroRecord.getHeader() +
-          GpsRecord.getHeader(); //check the csvMaker.dart
-      saveToCsv(recordsRows, header);
-      Navigator.pushReplacementNamed(context, '/doneRecordingScreen');
-    }
+//to bring data and send from api
+post(csv) async {
+  print("in post method");
+  var streetData = StreetfixRequest(csv: csv);
+  // First method 
+  Response response = await StreetfixUtils.postData(streetData);
+  print("after resposnse declrtaion");
+  if (response.statusCode == 200) {
+    //Successful
+    print("YAY tmchhaat");
+    print(response.body);
+    return streetfixFromJson(response.body);
   }
+}
+//once the timer finished: send the accel/gyro/gps row to csv - show DonePage
+stopRecording({saveResults = true}) async {
+    _timer.cancel();
+  accelStream.cancel();
+  gyroStream.cancel();
+//  locationStream.cancel();
+  ///TODO: cancel location thing
+  if (saveResults) {
+    var header = AccelRecord.getHeader() +
+        GyroRecord.getHeader() +
+        GpsRecord.getHeader(); //check the csvMaker.dart
+    var csv = saveToCsv(recordsRows, header);
+    var res = post(csv);
+    await Navigator.pushReplacementNamed(context, '/doneRecordingScreen');
+  }
+}
 
   startRecording() {
     setState(() {
@@ -520,4 +530,8 @@ void updateMarkerAndCircle(LocationData newLocalData, Uint8List imageData) {
       ),
     );
   }
+
+
+
+  
 }

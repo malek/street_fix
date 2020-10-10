@@ -215,6 +215,8 @@ class _DoneRecordingScreenState extends State<DoneRecordingScreen> {
                                   'Send Data.',
                                   'All your records will be sent to be processed to the server.',
                                   'ok');
+                                 
+
                             },
                             text: Text(
                               'Send Data',
