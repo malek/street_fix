@@ -20,16 +20,14 @@ import 'package:location/location.dart';
 import 'package:street_fix/widgets/gardien_buttonWidget.dart'; //to add cancel recording
 
 class Recording extends StatefulWidget {
-
   PassedArguments recievedData;
   Recording({Key key, @required this.recievedData}) : super(key: key);
   @override
-  //_RecordingState createState() => _RecordingState(counter,curentLocation);
   _RecordingState createState() => _RecordingState(recievedData);
 }
 
 class _RecordingState extends State<Recording> {
-  StreetfixRequest streetData; 
+  StreetfixRequest streetData;
 
   final Map<String, Marker> _markers = {};
 
@@ -45,15 +43,16 @@ class _RecordingState extends State<Recording> {
   List<double> traceGyroY = [];
   List<double> traceGyroZ = [];
 
-  // for acc data
+  // for acc data, gyro data , gps data
   double xaccel = 0, yaccel = 0, zaccel = 0;
-  // for gyro data
   double xgyro = 0, ygyro = 0, zgyro = 0;
-  // for gps data
   double currentLatitude = 0, currentLongitude = 0, currentspeed = 0;
 
   var startTime;
   Timer _timer;
+
+  //to save data once cancled
+  bool saveCancel = true;
 
   //lists for the Acceleromtre/Gyroscope/Gps function
   List<List<dynamic>> recordsRows = <List<dynamic>>[];
@@ -66,9 +65,6 @@ class _RecordingState extends State<Recording> {
   // ignore: sort_constructors_first
   _RecordingState(this.recievedData);
 
-
-
-  
   Future<void> _onMapCreated(GoogleMapController controller) async {
     final googleOffices = await locations.getGoogleOffices();
     setState(() {
@@ -86,17 +82,20 @@ class _RecordingState extends State<Recording> {
       }
     });
   }
- StreamSubscription _locationSubscription;
+
+  StreamSubscription _locationSubscription;
   Location _locationTracker = Location();
-Marker marker;
+  Marker marker;
   Circle circle;
-    GoogleMapController _controller;
+  GoogleMapController _controller;
 
   Future<Uint8List> getMarker() async {
-    ByteData byteData = await DefaultAssetBundle.of(context).load("assets/car_icon.png");
+    ByteData byteData =
+        await DefaultAssetBundle.of(context).load("assets/car_icon.png");
     return byteData.buffer.asUint8List();
   }
-void updateMarkerAndCircle(LocationData newLocalData, Uint8List imageData) {
+
+  void updateMarkerAndCircle(LocationData newLocalData, Uint8List imageData) {
     LatLng latlng = LatLng(newLocalData.latitude, newLocalData.longitude);
     this.setState(() {
       marker = Marker(
@@ -118,10 +117,8 @@ void updateMarkerAndCircle(LocationData newLocalData, Uint8List imageData) {
     });
   }
 
-
   void getCurrentLocation() async {
     try {
-
       Uint8List imageData = await getMarker();
       var location = await _locationTracker.getLocation();
 
@@ -131,26 +128,24 @@ void updateMarkerAndCircle(LocationData newLocalData, Uint8List imageData) {
         _locationSubscription.cancel();
       }
 
-
-      _locationSubscription = _locationTracker.onLocationChanged.listen((newLocalData) {
+      _locationSubscription =
+          _locationTracker.onLocationChanged.listen((newLocalData) {
         if (_controller != null) {
-          _controller.animateCamera(CameraUpdate.newCameraPosition(new CameraPosition(
-              bearing: 192.8334901395799,
-              target: LatLng(newLocalData.latitude, newLocalData.longitude),
-              tilt: 0,
-              zoom: 18.00)));
+          _controller.animateCamera(CameraUpdate.newCameraPosition(
+              CameraPosition(
+                  bearing: 192.8334901395799,
+                  target: LatLng(newLocalData.latitude, newLocalData.longitude),
+                  tilt: 0,
+                  zoom: 18.00)));
           updateMarkerAndCircle(newLocalData, imageData);
         }
       });
-
     } on PlatformException catch (e) {
       if (e.code == 'PERMISSION_DENIED') {
-        debugPrint("Permission Denied");
+        debugPrint('Permission Denied');
       }
     }
   }
-
-
 
   //to catch up the sensors -accel, gyro, gps- data
   startAccelerometer(handler) {
@@ -209,48 +204,53 @@ void updateMarkerAndCircle(LocationData newLocalData, Uint8List imageData) {
     recordsRows.add(
         rowItemAccel.toList() + rowItemGyro.toList() + rowGpsItem.toList());
   }
-//to bring data and send from api
-post(csv) async {
-  print("in post method");
-  var streetData = StreetfixRequest(csv: csv);
-  // First method 
-  Response response = await StreetfixUtils.postData(streetData);
-  print("after resposnse declrtaion");
-  if (response.statusCode == 200) {
-    //Successful
-    print("YAY tmchhaat");
-    print(response.body);
-    return streetfixFromJson(response.body);
-  }
-}
-//once the timer finished: send the accel/gyro/gps row to csv - show DonePage
-stopRecording({saveResults = true}) async {
-    _timer.cancel();
-  accelStream.cancel();
-  gyroStream.cancel();
-//  locationStream.cancel();
-  ///TODO: cancel location thing
-  if (saveResults) {
-    var header = AccelRecord.getHeader() +
-        GyroRecord.getHeader() +
-        GpsRecord.getHeader(); //check the csvMaker.dart
-    var csv = saveToCsv(recordsRows, header);
-    var res = post(csv);
-    await Navigator.pushReplacementNamed(context, '/doneRecordingScreen');
-  }
-}
 
-  startRecording() {
+//to bring data and send from api
+  post(csv) async {
+    print("in post method");
+    var streetData = StreetfixRequest(csv: csv);
+    // First method
+    Response response = await StreetfixUtils.postData(streetData);
+    print("after resposnse declrtaion");
+    if (response.statusCode == 200) {
+      //Successful
+      print("YAY tmchhaat");
+      print(response.body);
+      return streetfixFromJson(response.body);
+    }
+  }
+
+//once the timer finished: send the accel/gyro/gps row to csv - show DonePage
+  stopRecording({saveResults = true}) async {
+    _timer.cancel();
+    accelStream.cancel();
+    gyroStream.cancel();
+//  locationStream.cancel();
+    ///TODO: cancel location thing
+    if (saveCancel) {
+      var header = AccelRecord.getHeader() +
+          GyroRecord.getHeader() +
+          GpsRecord.getHeader(); //check the csvMaker.dart
+      var csv = saveToCsv(recordsRows, header);
+      var res = post(csv);
+      if (saveResults) //this means that he didnt press the cancel buttn
+      {
+        await Navigator.pushReplacementNamed(context, '/doneRecordingScreen');
+      }
+    }
+  }
+
+  startRecording() async {
     setState(() {
       currentLatitude = recievedData.location.latitude;
       currentLongitude = recievedData.location.longitude;
       currentspeed = recievedData.location.speed;
     });
     startTime = now(); // to take the exact second we lunched the record
-    _timer=startCountDown(
+    _timer = startCountDown(
       timer: _timer,
       initialValue: recievedData.count,
-      onEnd:  stopRecording,
+      onEnd: stopRecording,
       onTick: (cpt) => setState(() {
         recievedData.count = cpt;
       }),
@@ -268,10 +268,9 @@ stopRecording({saveResults = true}) async {
     startRecording();
   }
 
-
-   cancelButton() async => stopRecording(
-     saveResults:  false,
-   );
+  Future cancelButton() async => stopRecording(
+        saveResults: false,
+      );
 
   Widget Chartt(value, traceColor) {
     var oscilloscope2 = Oscilloscope(
@@ -313,9 +312,7 @@ stopRecording({saveResults = true}) async {
           Chartt(traceGyroZ, Color(0xffb7472a)),
         ],
       );
-      
-    }
-    else {
+    } else {
       return Text('Error To load Charts');
     }
   }
@@ -375,21 +372,12 @@ stopRecording({saveResults = true}) async {
                 width: MediaQuery.of(context).size.width * 0.9,
                 height: MediaQuery.of(context).size.height * 0.3,
                 child: GoogleMap(
-                  mapType: MapType.hybrid,
-                  initialCameraPosition: CameraPosition(
-                        target: LatLng(recievedData.location.latitude, recievedData.location.longitude) ,
-                        zoom: 14.4746,
-                ),
-                  markers: Set.of((marker != null) ? [marker] : []),
-                  circles: Set.of((circle != null) ? [circle] : []),
-                  // onMapCreated : (GoogleMapController controller){
-                  //   _controller = controller;
-                  // }
+                  mapType: MapType.normal,
                   onMapCreated: _onMapCreated,
-                  // initialCameraPosition: CameraPosition(
-                  //   target: const LatLng(0, 0),
-                  //   zoom: 2,
-                  // ),
+                  initialCameraPosition: CameraPosition(
+                    target: const LatLng(0, 0),
+                    zoom: 2,
+                  ),
                   //markers: _markers.values.toSet(),
                 ),
               ),
@@ -460,8 +448,85 @@ stopRecording({saveResults = true}) async {
                           width: 140,
                           height: 45,
                           onPressed: () {
-                            cancelButton();
-                            Navigator.pushReplacementNamed(context, '/welcomeScreen');
+                            _timer.cancel();
+                            accelStream.cancel();
+                            gyroStream.cancel();
+                            showDialog(
+                              context: context,
+                              builder: (BuildContext context) {
+                                return AlertDialog(
+                                  title: Center(
+                                      child: Text(
+                                    'Cancel',
+                                    style: TextStyle(
+                                      fontFamily: 'BreeSerif',
+                                      color: Color(0xff6a515e),
+                                      fontSize: 20,
+                                      letterSpacing: 1,
+                                    ),
+                                  )),
+                                  content: Text(
+                                    'Do You want to save the recording data ?',
+                                    style: TextStyle(
+                                      fontFamily: 'BreeSerif',
+                                      color: Colors.black,
+                                      fontSize: 15,
+                                      letterSpacing: 1,
+                                    ),
+                                  ),
+                                  backgroundColor: Colors.yellow[100],
+                                  actions: <Widget>[
+                                    
+                                    Row(
+                                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                      children: <Widget>[
+                                        RaisedButton(
+                                          //color: Color(0xffffae88),
+                                          onPressed: () {
+                                            setState(() {
+                                              saveCancel = true;
+                                            });
+                                            Navigator.of(context).pop();
+                                            cancelButton();
+                                            Navigator.pushReplacementNamed(
+                                                context, '/welcomeScreen');
+                                          },
+                                          child: Text(
+                                            'YES',
+                                            style: TextStyle(
+                                              fontFamily: 'BreeSerif',
+                                              color: Color(0xff6a515e),
+                                              fontSize: 20,
+                                              letterSpacing: 1,
+                                            ),
+                                          ),
+                                        ),
+                                        SizedBox(width: 178,),
+                                        RaisedButton(
+                                          //color: Color(0xffffae88),
+                                          onPressed: () {
+                                            saveCancel = false;
+                                            Navigator.of(context).pop();
+                                            cancelButton();
+                                            Navigator.pushReplacementNamed(
+                                                context, '/welcomeScreen');
+                                          },
+                                          child: Text(
+                                            'NO',
+                                            style: TextStyle(
+                                              fontFamily: 'BreeSerif',
+                                              color: Color(0xff6a515e),
+                                              fontSize: 20,
+                                              letterSpacing: 1,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                );
+                              },
+                            );
                           },
                           text: Text(
                             'Cancel ',
@@ -530,8 +595,4 @@ stopRecording({saveResults = true}) async {
       ),
     );
   }
-
-
-
-  
 }

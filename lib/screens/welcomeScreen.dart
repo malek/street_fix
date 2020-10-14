@@ -4,7 +4,6 @@ import 'package:street_fix/types/passedData.dart';
 import 'package:street_fix/widgets/curved_widget.dart';
 import 'package:street_fix/widgets/gardien_buttonWidget.dart';
 import 'package:location/location.dart';
-//import 'package:street_fix/widgets/widget.dart';
 
 class Welcome extends StatefulWidget {
   @override
@@ -123,8 +122,7 @@ class _WelcomeState extends State<Welcome> {
                     _locationData = await location.getLocation();
                     var passedArguments = PassedArguments(
                         count: _counter, location: _locationData);
-                    print('voilaaaa location');
-                    print(_locationData);
+
                      await Navigator.pushReplacementNamed(context, '/recordingScreen',arguments:
 
                        passedArguments,
