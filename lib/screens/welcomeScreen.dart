@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:street_fix/screens/seeMapScreen.dart';
 import 'package:street_fix/types/passedData.dart';
 import 'package:street_fix/widgets/curved_widget.dart';
 import 'package:street_fix/widgets/gardien_buttonWidget.dart';
@@ -123,17 +124,16 @@ class _WelcomeState extends State<Welcome> {
                     var passedArguments = PassedArguments(
                         count: _counter, location: _locationData);
 
-                     await Navigator.pushReplacementNamed(context, '/recordingScreen',arguments:
-
-                       passedArguments,
-                     );
-                    // Navigator.pushReplacementNamed(
-                    //     context, '/doneRecordingScreen');
+                    await Navigator.pushReplacementNamed(
+                      context,
+                      '/recordingScreen',
+                      arguments: passedArguments,
+                    );
                   }
                   if (!_serviceEnabled) {
                     _serviceEnabled = await location.requestService();
                     if (!_serviceEnabled) {
-                      showAlertDialog(context);
+                      showAlertDialog(context, "You can't record without activating the GPS.");
                       return;
                     }
                   }
@@ -172,7 +172,40 @@ class _WelcomeState extends State<Welcome> {
                       child: GradientButton(
                         width: 150,
                         height: 45,
-                        onPressed: () {},
+                        onPressed: () async {
+                          _serviceEnabled = await location.serviceEnabled();
+                          if (_serviceEnabled) {
+                            _locationData = await location.getLocation();
+                            var mapData = PassedArguments(
+                                count: _counter, location: _locationData);
+
+                            await Navigator.pushReplacementNamed(
+                              context,
+                              '/seeMapScreen',
+                              arguments: mapData,
+                            );
+                          }
+                          if (!_serviceEnabled) {
+                            _serviceEnabled = await location.requestService();
+                            if (!_serviceEnabled) {
+                              showAlertDialog(context, 'Please activate the GPS.'); 
+                              return;
+                            }
+                          }
+
+                          _permissionGranted = await location.hasPermission();
+                          if (_permissionGranted == PermissionStatus.denied) {
+                            _permissionGranted =
+                                await location.requestPermission();
+                            await Navigator.pushReplacementNamed(
+                                context, '/recordingScreen',
+                                arguments: _counter);
+                            if (_permissionGranted !=
+                                PermissionStatus.granted) {
+                              return;
+                            }
+                          }
+                        },
                         text: Text(
                           'See Maps',
                           style: TextStyle(
@@ -199,7 +232,7 @@ class _WelcomeState extends State<Welcome> {
   }
 }
 
-showAlertDialog(BuildContext context) {
+showAlertDialog(BuildContext context,description) {
   // Create button
   Widget okButton = RaisedButton(
     //color: Color(0xffffae88),
@@ -230,7 +263,7 @@ showAlertDialog(BuildContext context) {
       ),
     )),
     content: Text(
-      "You can't record without activating the GPS.",
+      description,
       style: TextStyle(
         fontFamily: 'BreeSerif',
         color: Colors.black,

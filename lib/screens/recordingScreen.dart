@@ -1,10 +1,8 @@
 import 'dart:async';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart';
 import 'package:oscilloscope/oscilloscope.dart';
 import 'package:sensors/sensors.dart';
-import 'package:flutter/services.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:street_fix/model/street_fix_Request.dart';
 import 'package:street_fix/model/street_fix_Response.dart';
@@ -29,8 +27,7 @@ class Recording extends StatefulWidget {
 class _RecordingState extends State<Recording> {
   StreetfixRequest streetData;
 
-  final Map<String, Marker> _markers = {};
-
+ 
   PassedArguments recievedData;
 //-----------Declarations--------------
 
@@ -65,87 +62,9 @@ class _RecordingState extends State<Recording> {
   // ignore: sort_constructors_first
   _RecordingState(this.recievedData);
 
-  Future<void> _onMapCreated(GoogleMapController controller) async {
-    final googleOffices = await locations.getGoogleOffices();
-    setState(() {
-      _markers.clear();
-      for (final office in googleOffices.offices) {
-        final marker = Marker(
-          markerId: MarkerId(office.name),
-          position: LatLng(office.lat, office.lng),
-          infoWindow: InfoWindow(
-            title: office.name,
-            snippet: office.address,
-          ),
-        );
-        _markers[office.name] = marker;
-      }
-    });
-  }
-
-  StreamSubscription _locationSubscription;
-  Location _locationTracker = Location();
   Marker marker;
   Circle circle;
-  GoogleMapController _controller;
-
-  Future<Uint8List> getMarker() async {
-    ByteData byteData =
-        await DefaultAssetBundle.of(context).load("assets/car_icon.png");
-    return byteData.buffer.asUint8List();
-  }
-
-  void updateMarkerAndCircle(LocationData newLocalData, Uint8List imageData) {
-    LatLng latlng = LatLng(newLocalData.latitude, newLocalData.longitude);
-    this.setState(() {
-      marker = Marker(
-          markerId: MarkerId("home"),
-          position: latlng,
-          rotation: newLocalData.heading,
-          draggable: false,
-          zIndex: 2,
-          flat: true,
-          anchor: Offset(0.5, 0.5),
-          icon: BitmapDescriptor.fromBytes(imageData));
-      circle = Circle(
-          circleId: CircleId("car"),
-          radius: newLocalData.accuracy,
-          zIndex: 1,
-          strokeColor: Colors.blue,
-          center: latlng,
-          fillColor: Colors.blue.withAlpha(70));
-    });
-  }
-
-  void getCurrentLocation() async {
-    try {
-      Uint8List imageData = await getMarker();
-      var location = await _locationTracker.getLocation();
-
-      updateMarkerAndCircle(location, imageData);
-
-      if (_locationSubscription != null) {
-        _locationSubscription.cancel();
-      }
-
-      _locationSubscription =
-          _locationTracker.onLocationChanged.listen((newLocalData) {
-        if (_controller != null) {
-          _controller.animateCamera(CameraUpdate.newCameraPosition(
-              CameraPosition(
-                  bearing: 192.8334901395799,
-                  target: LatLng(newLocalData.latitude, newLocalData.longitude),
-                  tilt: 0,
-                  zoom: 18.00)));
-          updateMarkerAndCircle(newLocalData, imageData);
-        }
-      });
-    } on PlatformException catch (e) {
-      if (e.code == 'PERMISSION_DENIED') {
-        debugPrint('Permission Denied');
-      }
-    }
-  }
+  
 
   //to catch up the sensors -accel, gyro, gps- data
   startAccelerometer(handler) {
@@ -207,14 +126,14 @@ class _RecordingState extends State<Recording> {
 
 //to bring data and send from api
   post(csv) async {
-    print("in post method");
+    print('in post method');
     var streetData = StreetfixRequest(csv: csv);
     // First method
     Response response = await StreetfixUtils.postData(streetData);
-    print("after resposnse declrtaion");
+    print('after resposnse declrtaion');
     if (response.statusCode == 200) {
       //Successful
-      print("YAY tmchhaat");
+      print('YAY tmchhaat');
       print(response.body);
       return streetfixFromJson(response.body);
     }
@@ -259,7 +178,7 @@ class _RecordingState extends State<Recording> {
     startAccelerometer(handleAccelEvent);
     startGyroscope(handleGyroscope);
     startGps(handleGpsEvent);
-    getCurrentLocation();
+    //getCurrentLocation();
   }
 
   @override
@@ -373,12 +292,14 @@ class _RecordingState extends State<Recording> {
                 height: MediaQuery.of(context).size.height * 0.3,
                 child: GoogleMap(
                   mapType: MapType.normal,
-                  onMapCreated: _onMapCreated,
+                 // onMapCreated: _onMapCreated,
                   initialCameraPosition: CameraPosition(
-                    target: const LatLng(0, 0),
-                    zoom: 2,
+                    target: LatLng(recievedData.location.latitude,
+                        recievedData.location.longitude),
+                    zoom: 15,
                   ),
-                  //markers: _markers.values.toSet(),
+                  myLocationEnabled: true,
+                  
                 ),
               ),
               //TableData(counter: counter, x: x, y: y, z: z),
@@ -476,10 +397,32 @@ class _RecordingState extends State<Recording> {
                                   ),
                                   backgroundColor: Colors.yellow[100],
                                   actions: <Widget>[
-                                    
                                     Row(
-                                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceEvenly,
                                       children: <Widget>[
+                                        RaisedButton(
+                                          //color: Color(0xffffae88),
+                                          onPressed: () {
+                                            saveCancel = false;
+                                            Navigator.of(context).pop();
+                                            cancelButton();
+                                            Navigator.pushReplacementNamed(
+                                                context, '/welcomeScreen');
+                                          },
+                                          child: Text(
+                                            'NO',
+                                            style: TextStyle(
+                                              fontFamily: 'BreeSerif',
+                                              color: Color(0xff6a515e),
+                                              fontSize: 20,
+                                              letterSpacing: 1,
+                                            ),
+                                          ),
+                                        ),
+                                        SizedBox(
+                                          width: 178,
+                                        ),
                                         RaisedButton(
                                           //color: Color(0xffffae88),
                                           onPressed: () {
@@ -493,26 +436,6 @@ class _RecordingState extends State<Recording> {
                                           },
                                           child: Text(
                                             'YES',
-                                            style: TextStyle(
-                                              fontFamily: 'BreeSerif',
-                                              color: Color(0xff6a515e),
-                                              fontSize: 20,
-                                              letterSpacing: 1,
-                                            ),
-                                          ),
-                                        ),
-                                        SizedBox(width: 178,),
-                                        RaisedButton(
-                                          //color: Color(0xffffae88),
-                                          onPressed: () {
-                                            saveCancel = false;
-                                            Navigator.of(context).pop();
-                                            cancelButton();
-                                            Navigator.pushReplacementNamed(
-                                                context, '/welcomeScreen');
-                                          },
-                                          child: Text(
-                                            'NO',
                                             style: TextStyle(
                                               fontFamily: 'BreeSerif',
                                               color: Color(0xff6a515e),
